@@ -42,12 +42,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         'Gunakan /help untuk melihat daftar perintah.'
     )
 
+async def get_channel_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Mendapatkan channel ID dari link channel"""
+    if not context.args:
+        await update.message.reply_text('Format: /getchannel <channel_username>\nContoh: /getchannel myChannel')
+        return
+        
+    channel_username = context.args[0].replace('@', '')
+    if '/' in channel_username:
+        channel_username = channel_username.split('/')[-1]
+    
+    channel_id = f"@{channel_username}"
+    await update.message.reply_text(f'Channel ID untuk {channel_username} adalah:\n{channel_id}')
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mengirim pesan bantuan saat command /help diterima."""
     help_text = (
         'Daftar perintah:\n'
         '/start - Memulai bot\n'
         '/help - Menampilkan pesan bantuan\n'
+        '/getchannel <username> - Mendapatkan channel ID dari username channel\n'
         '/monitor <channel_id> <pattern> - Mulai memantau channel dengan ID tertentu\n'
         '/stop - Berhenti memantau channel\n'
         '/list - Menampilkan daftar pesan yang telah diproses\n'
@@ -157,6 +171,7 @@ def main() -> None:
     # Tambahkan handler untuk command
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("getchannel", get_channel_id))
     application.add_handler(CommandHandler("monitor", monitor_channel))
     application.add_handler(CommandHandler("stop", stop_monitoring))
     application.add_handler(CommandHandler("list", list_messages))
