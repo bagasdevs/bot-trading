@@ -163,7 +163,7 @@ def main() -> None:
     application.add_handler(CommandHandler("clear", clear_messages))
     
     # Handler untuk pesan dari channel
-    application.add_handler(MessageHandler(filters.CHANNEL, handle_channel_post))
+    application.add_handler(MessageHandler(filters.ChatType.CHANNEL, handle_channel_post))
 
     # Mulai polling
     application.run_polling(allowed_updates=Update.ALL_TYPES)
