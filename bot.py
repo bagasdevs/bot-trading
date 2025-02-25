@@ -124,15 +124,18 @@ async def stop_monitoring(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def list_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Menampilkan daftar pesan yang telah diproses."""
+    # Get the correct message object based on whether this is a callback query or direct command
+    message = update.callback_query.message if update.callback_query else update.message
+    
     if not processed_messages:
-        await update.message.reply_text('Tidak ada pesan yang telah diproses.')
+        await message.reply_text('Tidak ada pesan yang telah diproses.')
         return
     
     result = "Daftar pesan yang telah diproses:\n\n"
     for idx, msg in enumerate(processed_messages, 1):
         result += f"{idx}. {msg}\n"
     
-    await update.message.reply_text(result)
+    await message.reply_text(result)
 
 async def clear_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Menghapus semua pesan yang telah diproses."""
