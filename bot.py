@@ -2,6 +2,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from collections import defaultdict
+from keep_alive import keep_alive
 import re
 import os
 from dotenv import load_dotenv
@@ -146,6 +147,7 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
         chat_id=user_id,
         text=f"Pesan baru diterima dan diproses:\n{formatted_text}"
     )
+keep_alive()
 
 def main() -> None:
     """Memulai bot."""
@@ -165,6 +167,8 @@ def main() -> None:
 
     # Mulai polling
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+
 
 if __name__ == "__main__":
     main()
