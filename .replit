@@ -1,8 +1,9 @@
+
 modules = ["python-3.12"]
-run = "python undefined"
+run = "python bot.py"
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "python undefined"]
+run = ["sh", "-c", "python bot.py"]

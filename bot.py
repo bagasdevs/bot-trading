@@ -147,9 +147,9 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
         chat_id=user_id,
         text=f"Pesan baru diterima dan diproses:\n{formatted_text}"
     )
-keep_alive()
-
 def main() -> None:
+    # Start the web server
+    keep_alive()
     """Memulai bot."""
     # Buat aplikasi dan tambahkan handler
     application = Application.builder().token(TOKEN).build()
