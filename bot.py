@@ -1,6 +1,6 @@
 import logging
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 from collections import defaultdict
 from keep_alive import keep_alive
 import re
@@ -36,11 +36,39 @@ def extract_text(text, pattern=None):
     return '\n'.join(extracted) if extracted else text
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Mengirim pesan saat command /start diterima."""
+    """Mengirim pesan dengan tombol menu saat /start diterima."""
+    keyboard = [
+        [InlineKeyboardButton("🔍 Monitor Channel", callback_data='monitor'),
+         InlineKeyboardButton("⏹️ Stop Monitor", callback_data='stop')],
+        [InlineKeyboardButton("📋 List Messages", callback_data='list'),
+         InlineKeyboardButton("🗑️ Clear Messages", callback_data='clear')],
+        [InlineKeyboardButton("❓ Help", callback_data='help')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         'Hai! Saya adalah bot yang mengumpulkan dan mengorganisir pesan dari channel.\n'
-        'Gunakan /help untuk melihat daftar perintah.'
+        'Silakan pilih menu di bawah ini:',
+        reply_markup=reply_markup
     )
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle button clicks"""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == 'monitor':
+        await query.message.reply_text(
+            'Silakan kirim channel ID yang ingin dipantau dengan format:\n'
+            'channel: @channelname'
+        )
+    elif query.data == 'stop':
+        await stop_monitoring(update, context)
+    elif query.data == 'list':
+        await list_messages(update, context)
+    elif query.data == 'clear':
+        await clear_messages(update, context)
+    elif query.data == 'help':
+        await help_command(update, context)
 
 async def get_channel_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mendapatkan channel ID dari link channel"""
@@ -69,16 +97,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
     await update.message.reply_text(help_text)
 
-async def monitor_channel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def monitor_channel(update: Update, context: ContextTypes.DEFAULT_TYPE, channel_id=None) -> None:
     """
     Memulai pemantauan channel dengan ID tertentu.
-    Format: /monitor <channel_id>
     """
-    if not context.args:
-        await update.message.reply_text('Format: /monitor <channel_id>')
+    if not channel_id:
         return
     
-    channel_id = context.args[0]
+    channel_id = '@' + channel_id
     
     # Simpan informasi channel yang dipantau ke dalam context.user_data
     context.user_data['monitored_channel'] = channel_id
@@ -175,8 +201,17 @@ def main() -> None:
     application.add_handler(CommandHandler("list", list_messages))
     application.add_handler(CommandHandler("clear", clear_messages))
     
+    # Handler untuk tombol
+    application.add_handler(CallbackQueryHandler(button_handler))
+    
     # Handler untuk pesan dari channel
     application.add_handler(MessageHandler(filters.ChatType.CHANNEL, handle_channel_post))
+    
+    # Handler untuk input channel ID
+    application.add_handler(MessageHandler(
+        filters.Regex(r'^channel: @\w+') & filters.ChatType.PRIVATE,
+        lambda u, c: monitor_channel(u, c, u.message.text.split('@')[1])
+    ))
 
     # Mulai polling
     application.run_polling(allowed_updates=Update.ALL_TYPES)
