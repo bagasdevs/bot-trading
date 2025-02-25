@@ -87,38 +87,69 @@ class TelegramBot:
             await handler(update, context)
 
     async def handle_channel_post(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        logger.info("Received channel post")
+        
+        if not update.channel_post or not update.channel_post.text:
+            logger.info("No text in channel post")
+            return
+
         if not self._is_valid_channel_post(update, context):
+            logger.info("Post is not from monitored channel")
             return
 
         original_text = update.channel_post.text
-        if not original_text:
-            return
+        logger.info(f"Processing message: {original_text}")
 
         extracted_text = self.extractor.extract_text(original_text)
         if not extracted_text.strip():
+            logger.info("No extractable content found")
             return
 
         count = self.message_store.add_message(extracted_text)
         formatted_text = f"{extracted_text}\n(Duplikat #{count})" if count > 1 else extracted_text
 
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text=f"Pesan baru diterima dan diproses:\n{formatted_text}"
-        )
+        # Send to all users who are monitoring this channel
+        try:
+            await context.bot.send_message(
+                chat_id=context.user_data.get('user_id'),  # Make sure to store user_id when starting monitoring
+                text=f"Pesan baru diterima dan diproses:\n{formatted_text}"
+            )
+            logger.info("Message successfully processed and sent")
+        except Exception as e:
+            logger.error(f"Error sending message: {e}")
 
     def _is_valid_channel_post(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-        return ('monitored_channel' in context.user_data and
-                str(update.channel_post.chat_id) == context.user_data['monitored_channel'])
+        if 'monitored_channel' not in context.user_data:
+            return False
+        
+        channel_username = update.channel_post.chat.username
+        monitored_channel = context.user_data['monitored_channel'].replace('@', '')
+        
+        logger.info(f"Received post from: @{channel_username}")
+        logger.info(f"Monitoring channel: {monitored_channel}")
+        
+        return channel_username and channel_username.lower() == monitored_channel.lower()
 
     async def monitor_channel(self, update: Update, context: ContextTypes.DEFAULT_TYPE, 
                             channel_id: Optional[str] = None) -> None:
+        # Check if channel_id is provided via command arguments
+        if not channel_id and context.args:
+            channel_id = context.args[0].replace('@', '')
+        
         if not channel_id:
+            await update.message.reply_text(
+                'Format: /monitor <channel_username>\n'
+                'Contoh: /monitor myChannel\n'
+                'atau kirim "channel: @channelname"'
+            )
             return
 
-        channel_id = f"@{channel_id}"
-        context.user_data['monitored_channel'] = channel_id
+        channel_id = channel_id.replace('@', '')  # Remove @ if present
+        context.user_data['monitored_channel'] = f"@{channel_id}"
+        context.user_data['user_id'] = update.effective_user.id  # Store user ID
+        
         await update.message.reply_text(
-            f'Mulai memantau channel: {channel_id}\n'
+            f'Mulai memantau channel: @{channel_id}\n'
             'Mengekstrak baris Ca: dan User: secara otomatis'
         )
 
@@ -135,7 +166,8 @@ class TelegramBot:
 
     async def clear_messages(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         self.message_store.clear()
-        await update.message.reply_text('Semua pesan telah dihapus.')
+        message = update.callback_query.message if update.callback_query else update.message
+        await message.reply_text('Semua pesan telah dihapus.')
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         help_text = (
