@@ -73,7 +73,7 @@ class TelegramBot:
         await query.answer()
 
         handlers = {
-            'monitor': lambda: query.message.reply_text(
+            'monitor': lambda u, c: query.message.reply_text(
                 'Silakan kirim channel ID yang ingin dipantau dengan format:\n'
                 'channel: @channelname'
             ),
