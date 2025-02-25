@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 
 # Menyimpan data pesan yang telah diproses
 message_database = defaultdict(int)
