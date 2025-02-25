@@ -26,16 +26,14 @@ processed_messages = []
 def extract_text(text, pattern=None):
     """
     Ekstrak teks berdasarkan pola tertentu.
-    Jika tidak ada pola yang diberikan, gunakan seluruh teks.
+    Khusus untuk baris yang dimulai dengan Ca: dan User:
     """
-    if pattern:
-        # Contoh pattern: mencari teks di antara tanda tertentu, atau format tertentu
-        # Misalnya: mencari teks di antara [ dan ]
-        matches = re.findall(pattern, text)
-        if matches:
-            return matches[0]
-    # Jika tidak ada pola atau tidak ada teks yang cocok, kembalikan seluruh teks
-    return text
+    lines = text.split('\n')
+    extracted = []
+    for line in lines:
+        if line.startswith('Ca:') or line.startswith('User:'):
+            extracted.append(line.strip())
+    return '\n'.join(extracted) if extracted else text
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Mengirim pesan saat command /start diterima."""
@@ -135,8 +133,10 @@ async def handle_channel_post(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Format pesan dengan menambahkan counter jika duplikat
     formatted_text = extracted_text
+    if not formatted_text.strip():
+        return  # Skip if no Ca: or User: lines found
     if count > 1:
-        formatted_text += f" ({count})"
+        formatted_text += f"\n(Duplikat #{count})"
     
     # Tambahkan ke daftar pesan yang diproses
     processed_messages.append(formatted_text)
