@@ -62,7 +62,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         '/start - Memulai bot\n'
         '/help - Menampilkan pesan bantuan\n'
         '/getchannel <username> - Mendapatkan channel ID dari username channel\n'
-        '/monitor <channel_id> <pattern> - Mulai memantau channel dengan ID tertentu\n'
+        '/monitor <channel_id> - Mulai memantau channel dengan ID tertentu (ekstrak Ca: dan User:)\n'
         '/stop - Berhenti memantau channel\n'
         '/list - Menampilkan daftar pesan yang telah diproses\n'
         '/clear - Menghapus semua pesan yang telah diproses'
@@ -72,20 +72,18 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def monitor_channel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Memulai pemantauan channel dengan ID tertentu.
-    Format: /monitor <channel_id> <pattern>
+    Format: /monitor <channel_id>
     """
-    if not context.args or len(context.args) < 1:
-        await update.message.reply_text('Format: /monitor <channel_id> <pattern>')
+    if not context.args:
+        await update.message.reply_text('Format: /monitor <channel_id>')
         return
     
     channel_id = context.args[0]
-    pattern = ' '.join(context.args[1:]) if len(context.args) > 1 else None
     
     # Simpan informasi channel yang dipantau ke dalam context.user_data
     context.user_data['monitored_channel'] = channel_id
-    context.user_data['pattern'] = pattern
     
-    await update.message.reply_text(f'Mulai memantau channel: {channel_id}\nPola: {pattern if pattern else "Semua teks"}')
+    await update.message.reply_text(f'Mulai memantau channel: {channel_id}\nMengekstrak baris Ca: dan User: secara otomatis')
 
 async def stop_monitoring(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Berhenti memantau channel."""
